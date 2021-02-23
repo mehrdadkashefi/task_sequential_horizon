@@ -56,6 +56,7 @@ def GridGen(x_range,y_range,vertex, plot):
 # Sequence with Jump
 # jump type:  [0] No Jump,   [1] Only +2   [2] Both +1 and +2
 def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
+    status = True # Final status of current trial. Is it a successful trial?
     num_targets = Grid.shape[0]
     Trajectory = np.zeros((seq_length,), dtype=np.int)
     Trajectory[0] = np.where(np.logical_and(Grid[:,0]==0 , Grid[:,1]==0)==1)[0]
@@ -78,7 +79,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
 
             # Remove the last position from the list
             neighbor_idx = np.delete(neighbor_idx,np.where(neighbor_idx==Trajectory[i-1]))
-            
+            neighbor_idx = np.delete(neighbor_idx,np.where(neighbor_idx==Trajectory[i-2]))
             
             # Regulating reaches
             a = Grid[Trajectory[i],:] - Grid[Trajectory[i-1],:] # the vector for previous move
@@ -95,6 +96,11 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                     neighbor_idx_aug = np.append(neighbor_idx_aug, idx)
                     neighbor_idx_aug = np.append(neighbor_idx_aug, idx)
      
+            if len(neighbor_idx_aug) == 0:
+                print('Ran out of choices')
+                status = False
+                continue
+            
             next_idx = np.random.permutation(neighbor_idx_aug)[0]
             Trajectory[i+1] = next_idx
             
@@ -133,11 +139,18 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                 if jump == 1:
                     Jump[i-2, 0] = 1
                     Jump[i-2, 1] = -1
+                    
+                    # Check if there are any possible future target choices
+                    if len(neighbor_idx_aug[neighbor_idx_aug!=next_idx]) == 0:
+                        print("Ran out of possible choices for jump")
+                        status = False
+                        continue
+                        
                     hoax_next_idx = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=next_idx])[0] # Remove the main choice form the list of possible jumps and select and alternative randomly
                     Jump[i-2, 2] = hoax_next_idx
 
         
-    return Trajectory, Jump
+    return Trajectory, Jump, status
 
 
 def SeqAnimate(Grid, Trajectory,Jump, name_idx):
@@ -195,13 +208,13 @@ def TPGen(Grid, SEQ, JUMP):
         
         if any(JUMP[i,:,0]!=0):  # In case there is a jump in the trial
             trial_to_jump = np.where(JUMP[i,:,0]!=0)[0]
-            TP_Trial[i,15:20] = [JUMP[i, trial_to_jump, 0], trial_to_jump, JUMP[i, trial_to_jump, 2] + 1 , JUMP[i, trial_to_jump, 1] + 1, Jump_distance]  # +1 is for matlab compatibility
+            TP_Trial[i,15:20] = [JUMP[i, trial_to_jump, 0], trial_to_jump +1, JUMP[i, trial_to_jump, 2] + 1 , JUMP[i, trial_to_jump, 1] + 1, Jump_distance]  # +1 is for matlab compatibility
         else:
             TP_Trial[i,15:20] = [Jump_type, Jump_which_reach, Jump_target_2 + 1, Jump_target_1 +1 , Jump_distance]  # +1 is for matlab compatibility
         
         TP_Trial[i,20:] = [Start_target_delay, Between_target_dwell_time, Max_reach_time, Post_trial_delay, horizen, current_target_opacity, N1_opacity, N2_opacity, N3_opacity, N4_opaciy]
         
-    np.savetxt('./TP_Trial.txt', TP_Trial ,fmt='%1.0f', delimiter='\t') # +1 is for matlab compatibility
+    np.savetxt('./TP_Trial.txt', TP_Trial ,fmt='%1.4f', delimiter='\t') # +1 is for matlab compatibility
     print('Wrote Sequences.')
     np.savetxt('./Grid.txt',Grid,fmt='%1.2f', delimiter ='\t')
     print('Wrote Grid Locations.')
