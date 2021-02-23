@@ -106,7 +106,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
             
             
             if i == jump_inx+1:
-                if jump == 2:
+                if jump == 2: # should review jump 2, not really working smoothly! +2 hoax seems to be far away after the true +1 is shown!
                     Jump[i-1, 0] = 2
                     hoax_next_idx = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=next_idx])[0] # Remove the main choice form the list of possible jumps and select and alternative randomly
                     Jump[i-1, 1] = hoax_next_idx
