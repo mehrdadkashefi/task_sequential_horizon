@@ -83,7 +83,12 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
             
             # Regulating reaches
             a = Grid[Trajectory[i],:] - Grid[Trajectory[i-1],:] # the vector for previous move
+            
+            if i>1:
+                # Saving the last Augmented possible neighbors befor making the new one, this list of possible choices will be used for +1 jumps.
+                neighbor_idx_aug_last_step = neighbor_idx_aug
 
+            
             # Augmented possible neighbors after probability correction
             neighbor_idx_aug = neighbor_idx
             for idx in neighbor_idx:
@@ -104,37 +109,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
             next_idx = np.random.permutation(neighbor_idx_aug)[0]
             Trajectory[i+1] = next_idx
             
-            
-            if i == jump_inx+1:
-                if jump == 2: # should review jump 2, not really working smoothly! +2 hoax seems to be far away after the true +1 is shown!
-                    Jump[i-1, 0] = 2
-                    hoax_next_idx = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=next_idx])[0] # Remove the main choice form the list of possible jumps and select and alternative randomly
-                    Jump[i-1, 1] = hoax_next_idx
                     
-                    ### And possible targets based on the +1 hoax
-                    # Find the neighbors for current possition: Possible targets 
-                    neighbor_idx = np.where(np.round(Grid_dist[hoax_next_idx,:]) == vertex)[0]
-                    # Remove the last position from the list
-                    neighbor_idx = np.delete(neighbor_idx,np.where(neighbor_idx==next_idx))
-                    # Regulating reaches
-                    a = Grid[hoax_next_idx,:] - Grid[next_idx,:] # the vector for previous move
-                    # Augmented possible neighbors after probability correction
-                    neighbor_idx_aug = neighbor_idx
-                    for idx in neighbor_idx:
-                        # The vector for all possible next moves
-                        b = Grid[idx,:] - Grid[hoax_next_idx,:]
-                        # Angle of possible next movement
-                        ang = np.round(np.arccos(np.dot(a,b)/(np.linalg.norm(a)*np.linalg.norm(b)) - epsi)*(180/np.pi))
-                        # increace the probability if the possible move is 60 degrees
-                        if ang == 60:
-                            neighbor_idx_aug = np.append(neighbor_idx_aug, idx)
-
-
-                    next_next_hoax = np.random.permutation(neighbor_idx_aug)[0]
-                    
-                    Jump[i-1, 2] = next_next_hoax
-                    
-        
             if i == jump_inx+2:
                 if jump == 1:
                     Jump[i-2, 0] = 1
@@ -148,7 +123,29 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                         
                     hoax_next_idx = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=next_idx])[0] # Remove the main choice form the list of possible jumps and select and alternative randomly
                     Jump[i-2, 2] = hoax_next_idx
-
+                    
+                if jump == 2:
+                    ## find the common elements between current augmented neighbor and the previous augmented neighbor
+                    #common_elements = np.array([x for x in neighbor_idx_aug if x in neighbor_idx_aug_last_step])
+                    #print(common_elements)
+                    #print(Trajectory[i-1])
+                    ## Check if there are any possible jump target choices
+                    
+                    #print(common_elements!=Trajectory[i-1])
+                    #if len(common_elements[common_elements!=Trajectory[i-1]]) == 0:
+                    #    print("Ran out of possible choices for jump")
+                    #    status = False
+                    #    continue
+                    if len(neighbor_idx_aug[neighbor_idx_aug!=Trajectory[i-1]]) == 0:
+                        print("Ran out of possible choices for jump")
+                        status = False
+                        continue
+                    
+                    
+                    hoax = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=Trajectory[i-1]])[0]
+                    Jump[i-1, 0] = 2
+                    Jump[i-1, 1] = hoax
+                    Jump[i-1, 2] = -1    
         
     return Trajectory, Jump, status
 
