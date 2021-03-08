@@ -86,7 +86,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
             
             if i>1:
                 # Saving the last Augmented possible neighbors befor making the new one, this list of possible choices will be used for +1 jumps.
-                neighbor_idx_aug_last_step = neighbor_idx_aug
+                neighbor_idx_aug_last_step = np.copy(neighbor_idx_aug)
 
             
             # Augmented possible neighbors after probability correction
@@ -111,6 +111,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
             
                     
             if i == jump_inx+2:
+                # Doing +2 jumps
                 if jump == 1:
                     Jump[i-2, 0] = 1
                     Jump[i-2, 1] = -1
@@ -123,29 +124,35 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                         
                     hoax_next_idx = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=next_idx])[0] # Remove the main choice form the list of possible jumps and select and alternative randomly
                     Jump[i-2, 2] = hoax_next_idx
-                    
+                # Doing +1 Jumps
                 if jump == 2:
-                    ## find the common elements between current augmented neighbor and the previous augmented neighbor
-                    #common_elements = np.array([x for x in neighbor_idx_aug if x in neighbor_idx_aug_last_step])
-                    #print(common_elements)
-                    #print(Trajectory[i-1])
-                    ## Check if there are any possible jump target choices
+                    # Finding the targets in (+1) neighborhood that are adjacent to the (+2); This is used for finding 
+                    possible_1_jumps = np.array([x for x in neighbor_idx_aug_last_step if np.round(Grid_dist[x,next_idx]) == vertex])
+                    possible_1_jumps_dis = np.array([Grid_dist[x,next_idx] for x in neighbor_idx_aug_last_step])
+                  
                     
-                    #print(common_elements!=Trajectory[i-1])
-                    #if len(common_elements[common_elements!=Trajectory[i-1]]) == 0:
-                    #    print("Ran out of possible choices for jump")
-                    #    status = False
-                    #    continue
-                    if len(neighbor_idx_aug[neighbor_idx_aug!=Trajectory[i-1]]) == 0:
+                    # +1 jump cannot be the same as already established +2
+                    possible_1_jumps = np.delete(possible_1_jumps, possible_1_jumps==next_idx)
+                    # +1 jump cannot be the current established +1
+                    possible_1_jumps = np.delete(possible_1_jumps, possible_1_jumps==Trajectory[i])
+                    
+                    # Check if there are any possible jump target choices
+                    if len(possible_1_jumps) == 0:
                         print("Ran out of possible choices for jump")
                         status = False
                         continue
                     
+                    hoax = np.random.permutation(possible_1_jumps)[0]
+                    Jump[i-2, 0] = 2
+                    Jump[i-2, 1] = hoax
+                    Jump[i-2, 2] = -1
                     
-                    hoax = np.random.permutation(neighbor_idx_aug[neighbor_idx_aug!=Trajectory[i-1]])[0]
-                    Jump[i-1, 0] = 2
-                    Jump[i-1, 1] = hoax
-                    Jump[i-1, 2] = -1    
+                    
+            # Check if the reach inside a predefined box (To make sure the reach stays in Kinarm work space)
+            if np.any(Grid[Trajectory] < -15) | np.any(Grid[Trajectory] > 15):
+                print("Reach out of work space")
+                status = False
+                continue
         
     return Trajectory, Jump, status
 
