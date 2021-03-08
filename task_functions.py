@@ -102,7 +102,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                     neighbor_idx_aug = np.append(neighbor_idx_aug, idx)
      
             if len(neighbor_idx_aug) == 0:
-                print('Ran out of choices')
+                ## print('Ran out of choices')
                 status = False
                 continue
             
@@ -118,7 +118,7 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                     
                     # Check if there are any possible future target choices
                     if len(neighbor_idx_aug[neighbor_idx_aug!=next_idx]) == 0:
-                        print("Ran out of possible choices for jump")
+                        ## print("Ran out of possible choices for jump")
                         status = False
                         continue
                         
@@ -147,12 +147,6 @@ def SeqGen(Grid, Grid_dist, seq_length, vertex, jump, plot):
                     Jump[i-2, 1] = hoax
                     Jump[i-2, 2] = -1
                     
-                    
-            # Check if the reach inside a predefined box (To make sure the reach stays in Kinarm work space)
-            if np.any(Grid[Trajectory] < -15) | np.any(Grid[Trajectory] > 15):
-                print("Reach out of work space")
-                status = False
-                continue
         
     return Trajectory, Jump, status
 
